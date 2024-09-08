@@ -19,11 +19,11 @@ var cookies;
 // Set up session middleware
 app.use(
   session({
-    secret: "secretKey", // Use a strong secret stored in env variables
+    secret: process.env.COOKIE_SECRET_KEY, // Use a strong secret stored in env variables
     resave: false, // Prevents session from being saved again if unmodified
     saveUninitialized: true, // Saves uninitialized sessions (useful for login)
     cookie: {
-      secure: process.env.NODE_ENV === "production", // Set true if using HTTPS
+      secure: true, // Set true if using HTTPS
       maxAge: 1000 * 60 * 60, // 1 hour session duration
     },
   })
