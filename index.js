@@ -352,14 +352,9 @@ async function scrapeData(url) {
   }
 }
 
-
 app.get("/", cors(), async (req, res) => {
   try {
     const mergedData = await fetchAndMergeData();
-    // const userID = cookies.id;
-    // const query = "SELECT f.team FROM userdata u JOIN favouritetable f ON u.id = f.user_id WHERE u.id =$1"
-    // const result = await db.query(query, [userID]);
-    // const favTeam = result.rows;
     console.log(cookies);
     res.json(mergedData);
   } catch (error) {
@@ -368,19 +363,18 @@ app.get("/", cors(), async (req, res) => {
 });
 
 app.get("/getFav", cors(), async (req, res) => {
-    try {
-      const userID = cookies.id;
-      const query = "SELECT f.team FROM userdata u JOIN favouritetable f ON u.id = f.user_id WHERE u.id =$1"
-      const result = await db.query(query, [userID]);
-      const favTeam = result.rows;
-      
-      res.json(favTeam);
-    } catch (error) {
-      res.status(500).send("Error fetching data");
-    }
-  });
-  
+  try {
+    const userID = cookies.id;
+    const query =
+      "SELECT f.team FROM userdata u JOIN favouritetable f ON u.id = f.user_id WHERE u.id =$1";
+    const result = await db.query(query, [userID]);
+    const favTeam = result.rows;
 
+    res.json(favTeam);
+  } catch (error) {
+    res.status(500).send("Error fetching data");
+  }
+});
 
 // API route to get the latest match data
 app.get("/latestMatch", cors(), async (req, res) => {
@@ -475,8 +469,6 @@ app.post("/login", async (req, res) => {
   }
 });
 
-
-
 // Logout API to destroy the session
 app.post("/logout", (req, res) => {
   req.session.destroy((err) => {
@@ -490,31 +482,54 @@ app.post("/logout", (req, res) => {
   });
 });
 
-
-
-
-
-
-
 app.post("/addFavorite", async (req, res) => {
-    const userId = cookies.id; 
-    const teamName = req.body.teamName; 
-  
-    if (!userId || !teamName) {
-      return res.status(400).json({ message: "User ID and team name are required." });
-    }
-  
-    try {
-      const query = "INSERT INTO favouritetable (user_id, team) VALUES ($1, $2)";
-      await db.query(query, [userId, teamName]);
-      res.status(201).json({ message: "Favorite team added successfully!" });
-    } catch (error) {
-      console.error("Error adding favorite team:", error);
-      res.status(500).json({ message: "An error occurred while adding the favorite team." });
-    }
-  });
+  const userId = cookies.id;
+  const teamName = req.body.teamName;
 
+  if (!userId || !teamName) {
+    return res
+      .status(400)
+      .json({ message: "User ID and team name are required." });
+  }
 
+  try {
+    const query = "INSERT INTO favouritetable (user_id, team) VALUES ($1, $2)";
+    await db.query(query, [userId, teamName]);
+    res.status(201).json({ message: "Favorite team added successfully!" });
+  } catch (error) {
+    console.error("Error adding favorite team:", error);
+    res
+      .status(500)
+      .json({ message: "An error occurred while adding the favorite team." });
+  }
+});
+
+app.delete("/deleteFavorite", async (req, res) => {
+  const userId = cookies.id;
+  const teamName = req.body.teamName;
+
+  if (!userId || !teamName) {
+    return res
+      .status(400)
+      .json({ message: "User ID and team name are required." });
+  }
+
+  try {
+    const query = "DELETE FROM favouritetable WHERE user_id = $1 AND team = $2";
+    const result = await db.query(query, [userId, teamName]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Favorite team not found." });
+    }
+
+    res.status(200).json({ message: "Favorite team removed successfully!" });
+  } catch (error) {
+    console.error("Error deleting favorite team:", error);
+    res
+      .status(500)
+      .json({ message: "An error occurred while deleting the favorite team." });
+  }
+});
 
 app.listen(port, () => {
   console.log(`Server started on port ${port}`);
