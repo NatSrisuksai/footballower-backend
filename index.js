@@ -429,6 +429,15 @@ app.post(
         "INSERT INTO userdata (username, email, password) VALUES ($1, $2, $3)";
       await db.query(insertQuery, [username, email, hashedPassword]);
 
+      const queryForCookie = "SELECT * FROM userdata WHERE username = $1";
+      const resultForCooke = await db.query(queryForCookie, [username]);
+      const user = resultForCooke.rows[0];
+      // Save user info in the session
+      req.session.user = {
+        id: user.id,
+        username: user.username,
+      };
+      cookies = req.session.user;
       res.status(201).json({ message: "User registered successfully!" });
     } catch (error) {
       console.error("Error inserting data:", error);
