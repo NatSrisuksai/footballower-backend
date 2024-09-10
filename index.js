@@ -14,8 +14,6 @@ dotenv.config();
 const app = express();
 const port = 3000;
 
-var cookies;
-
 // Set up session middleware
 app.use(
   session({
@@ -23,7 +21,7 @@ app.use(
     resave: false, 
     saveUninitialized: true, 
     cookie: {
-      secure: true, // Set true if using HTTPS
+      secure: process.env.NODE_ENV === 'production', // Set true if using HTTPS in production
       maxAge: 1000 * 60 * 60, // 1 hour session duration
     },
   })
@@ -42,6 +40,15 @@ app.use(helmet());
 const db = new pg.Pool({
   connectionString: process.env.POSTGRES_URL,
 });
+
+// Middleware to check if user is authenticated
+const isAuthenticated = (req, res, next) => {
+  if (req.session.user) {
+    next();
+  } else {
+    res.status(401).json({ message: "Unauthorized" });
+  }
+};
 
 db.connect();
 
@@ -351,43 +358,45 @@ async function scrapeData(url) {
 
 
 // Route to fetch Premier League table data
-app.get("/", cors(),async (req, res) => {
+app.get("/", cors(), async (req, res) => {
   try {
     const mergedData = await fetchAndMergeData();
-    console.log(cookies);
     res.json(mergedData);
   } catch (error) {
-    res.status(500).send("Error fetching data");
+    console.error("Error fetching data:", error);
+    res.status(500).json({ message: "Error fetching data" });
   }
 });
 
 // Route to get favorite teams for a user
-app.get("/getFav", cors(),async (req, res) => {
+app.get("/getFav", cors(), isAuthenticated, async (req, res) => {
   try {
-    const userID = cookies.id;
+    const userID = req.session.user.id;
     const query = "SELECT f.team FROM userdata u JOIN favouritetable f ON u.id = f.user_id WHERE u.id = $1";
     const result = await db.query(query, [userID]);
     const favTeam = result.rows;
 
     res.json(favTeam);
   } catch (error) {
-    res.status(500).send("Error fetching data");
+    console.error("Error fetching favorite teams:", error);
+    res.status(500).json({ message: "Error fetching favorite teams" });
   }
 });
 
 // API route to get the latest match data
-app.get("/latestMatch", cors(),async (req, res) => {
+app.get("/latestMatch", cors(), async (req, res) => {
   const url = req.query.url;
 
   if (!url) {
-    return res.status(400).send("URL is required");
+    return res.status(400).json({ message: "URL is required" });
   }
 
   try {
     const matches = await scrapeData(url);
     res.json(matches);
   } catch (error) {
-    res.status(500).send("Error fetching match data");
+    console.error("Error fetching match data:", error);
+    res.status(500).json({ message: "Error fetching match data" });
   }
 });
 
@@ -425,18 +434,16 @@ app.post(
       const hashedPassword = await bcrypt.hash(password, saltRounds);
 
       const insertQuery =
-        "INSERT INTO userdata (username, email, password) VALUES ($1, $2, $3)";
-      await db.query(insertQuery, [username, email, hashedPassword]);
+        "INSERT INTO userdata (username, email, password) VALUES ($1, $2, $3) RETURNING id";
+      const result = await db.query(insertQuery, [username, email, hashedPassword]);
+      const user = result.rows[0];
 
-      const queryForCookie = "SELECT * FROM userdata WHERE username = $1";
-      const resultForCooke = await db.query(queryForCookie, [username]);
-      const user = resultForCooke.rows[0];
       // Save user info in the session
       req.session.user = {
         id: user.id,
         username: user.username,
       };
-      cookies = req.session.user;
+      
       res.status(201).json({ message: "User registered successfully!" });
     } catch (error) {
       console.error("Error inserting data:", error);
@@ -469,7 +476,7 @@ app.post("/login", async (req, res) => {
       id: user.id,
       username: user.username,
     };
-    cookies = req.session.user;
+    
     res.status(200).json({ message: "Login successful!" });
   } catch (error) {
     console.error("Error during login:", error);
@@ -478,26 +485,22 @@ app.post("/login", async (req, res) => {
 });
 
 // Logout API to destroy the session
-app.post("/logout",  (req, res) => {
+app.post("/logout", (req, res) => {
   req.session.destroy((err) => {
     if (err) {
       return res.status(500).json({ message: "Failed to log out" });
     }
     res.clearCookie("connect.sid"); // Clear session cookie
     res.status(200).json({ message: "Logged out successfully" });
-    cookies = null;
-    console.log("Destroy Cookies");
   });
 });
 
-app.post("/addFavorite", async (req, res) => {
-  const userId = cookies.id;
+app.post("/addFavorite", isAuthenticated, async (req, res) => {
+  const userId = req.session.user.id;
   const teamName = req.body.teamName;
 
-  if (!userId || !teamName) {
-    return res
-      .status(400)
-      .json({ message: "User ID and team name are required." });
+  if (!teamName) {
+    return res.status(400).json({ message: "Team name is required." });
   }
 
   try {
@@ -506,20 +509,16 @@ app.post("/addFavorite", async (req, res) => {
     res.status(201).json({ message: "Favorite team added successfully!" });
   } catch (error) {
     console.error("Error adding favorite team:", error);
-    res
-      .status(500)
-      .json({ message: "An error occurred while adding the favorite team." });
+    res.status(500).json({ message: "An error occurred while adding the favorite team." });
   }
 });
 
-app.delete("/deleteFavorite", async (req, res) => {
-  const userId = cookies.id;
+app.delete("/deleteFavorite", isAuthenticated, async (req, res) => {
+  const userId = req.session.user.id;
   const teamName = req.body.teamName;
 
-  if (!userId || !teamName) {
-    return res
-      .status(400)
-      .json({ message: "User ID and team name are required." });
+  if (!teamName) {
+    return res.status(400).json({ message: "Team name is required." });
   }
 
   try {
@@ -533,9 +532,7 @@ app.delete("/deleteFavorite", async (req, res) => {
     res.status(200).json({ message: "Favorite team removed successfully!" });
   } catch (error) {
     console.error("Error deleting favorite team:", error);
-    res
-      .status(500)
-      .json({ message: "An error occurred while deleting the favorite team." });
+    res.status(500).json({ message: "An error occurred while deleting the favorite team." });
   }
 });
 
