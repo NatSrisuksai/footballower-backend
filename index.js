@@ -362,18 +362,36 @@ app.get("/", cors(),async (req, res) => {
 });
 
 // Route to get favorite teams for a user
-app.get("/getFav", cors(),async (req, res) => {
+app.get("/getFav", cors(), async (req, res) => {
   try {
-    const userID = cookies.id;
-    const query = "SELECT f.team FROM userdata u JOIN favouritetable f ON u.id = f.user_id WHERE u.id = $1";
-    const result = await db.query(query, [userID]);
-    const favTeam = result.rows;
+    const userID = req.cookies?.id; // Safely access cookies to avoid crashes if not present
 
-    res.json(favTeam);
+    if (!userID) {
+      return res.status(401).json({ message: "User not authenticated" }); // If user is not logged in
+    }
+
+    const query = `
+      SELECT f.team 
+      FROM userdata u 
+      JOIN favouritetable f 
+      ON u.id = f.user_id 
+      WHERE u.id = $1
+    `;
+    const result = await db.query(query, [userID]);
+
+    if (!result.rows || result.rows.length === 0) {
+      return res.status(200).json([]); // Return an empty array if no favorite team is found
+    }
+
+    const favTeam = result.rows;
+    res.status(200).json(favTeam); // Send the favorite teams if available
+
   } catch (error) {
-    res.status(500).send("Error fetching data");
+    console.error("Error fetching favorite teams:", error); // Log the error
+    res.status(500).json({ message: "Internal Server Error" }); // Return detailed error response
   }
 });
+
 
 // API route to get the latest match data
 app.get("/latestMatch", cors() ,async (req, res) => {
