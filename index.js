@@ -33,8 +33,10 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(
   cors({
-    origin: "https://footballower.vercel.app", // eact app's URL
-    credentials: true, // Allow cookies to be sent
+    origin: "https://footballower.vercel.app", 
+    credentials: true, // Allow credentials (cookies, etc.)
+    methods: ["GET", "POST","DELETE"], 
+    allowedHeaders: ["Content-Type", "Authorization"], // Specify allowed headers
   })
 );
 app.use(helmet());
@@ -350,7 +352,8 @@ async function scrapeData(url) {
 }
 
 
-app.get("/", cors(), async (req, res) => {
+// Route to fetch Premier League table data
+app.get("/", async (req, res) => {
   try {
     const mergedData = await fetchAndMergeData();
     console.log(cookies);
@@ -360,11 +363,11 @@ app.get("/", cors(), async (req, res) => {
   }
 });
 
-app.get("/getFav", cors(), async (req, res) => {
+// Route to get favorite teams for a user
+app.get("/getFav", async (req, res) => {
   try {
     const userID = cookies.id;
-    const query =
-      "SELECT f.team FROM userdata u JOIN favouritetable f ON u.id = f.user_id WHERE u.id =$1";
+    const query = "SELECT f.team FROM userdata u JOIN favouritetable f ON u.id = f.user_id WHERE u.id = $1";
     const result = await db.query(query, [userID]);
     const favTeam = result.rows;
 
@@ -375,7 +378,7 @@ app.get("/getFav", cors(), async (req, res) => {
 });
 
 // API route to get the latest match data
-app.get("/latestMatch", cors(), async (req, res) => {
+app.get("/latestMatch", async (req, res) => {
   const url = req.query.url;
 
   if (!url) {
