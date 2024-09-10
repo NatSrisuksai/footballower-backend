@@ -19,9 +19,9 @@ var cookies;
 // Set up session middleware
 app.use(
   session({
-    secret: process.env.COOKIE_SECRET_KEY, // Use a strong secret stored in env variables
-    resave: false, // Prevents session from being saved again if unmodified
-    saveUninitialized: true, // Saves uninitialized sessions (useful for login)
+    secret: process.env.COOKIE_SECRET_KEY, 
+    resave: false, 
+    saveUninitialized: true, 
     cookie: {
       secure: true, // Set true if using HTTPS
       maxAge: 1000 * 60 * 60, // 1 hour session duration
@@ -40,11 +40,7 @@ app.use(
 app.use(helmet());
 
 const db = new pg.Pool({
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  database: process.env.DB_NAME,
+  connectionString: process.env.POSTGRES_URL,
 });
 
 db.connect();
@@ -249,6 +245,7 @@ async function fetchAndMergeData() {
   }
 }
 
+//scap next match and last 5 matches
 async function scrapeData(url) {
   try {
     // Fetch the HTML of the page
@@ -351,6 +348,7 @@ async function scrapeData(url) {
     throw error;
   }
 }
+
 
 app.get("/", cors(), async (req, res) => {
   try {
