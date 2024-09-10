@@ -19,9 +19,9 @@ var cookies;
 // Set up session middleware
 app.use(
   session({
-    secret: process.env.COOKIE_SECRET_KEY, 
-    resave: false, 
-    saveUninitialized: true, 
+    secret: process.env.COOKIE_SECRET_KEY,
+    resave: false,
+    saveUninitialized: true,
     cookie: {
       secure: true, // Set true if using HTTPS
       maxAge: 1000 * 60 * 60, // 1 hour session duration
@@ -33,7 +33,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(
   cors({
-    origin: "https://footballower.vercel.app", 
+    origin: "https://footballower.vercel.app",
     credentials: true, // Allow credentials (cookies, etc.)
   })
 );
@@ -349,9 +349,8 @@ async function scrapeData(url) {
   }
 }
 
-
 // Route to fetch Premier League table data
-app.get("/", cors(),async (req, res) => {
+app.get("/", cors(), async (req, res) => {
   try {
     const mergedData = await fetchAndMergeData();
     console.log(cookies);
@@ -364,19 +363,9 @@ app.get("/", cors(),async (req, res) => {
 // Route to get favorite teams for a user
 app.get("/getFav", cors(), async (req, res) => {
   try {
-    const userID = req.cookies?.id; // Safely access cookies to avoid crashes if not present
-
-    if (!userID) {
-      return res.status(401).json({ message: "User not authenticated" }); // If user is not logged in
-    }
-
-    const query = `
-      SELECT f.team 
-      FROM userdata u 
-      JOIN favouritetable f 
-      ON u.id = f.user_id 
-      WHERE u.id = $1
-    `;
+    const userID = cookies.id;
+    const query =
+      "SELECT f.team FROM userdata u JOIN favouritetable f ON u.id = f.user_id WHERE u.id = $1";
     const result = await db.query(query, [userID]);
 
     if (!result.rows || result.rows.length === 0) {
@@ -385,16 +374,14 @@ app.get("/getFav", cors(), async (req, res) => {
 
     const favTeam = result.rows;
     res.status(200).json(favTeam); // Send the favorite teams if available
-
   } catch (error) {
     console.error("Error fetching favorite teams:", error); // Log the error
     res.status(500).json({ message: "Internal Server Error" }); // Return detailed error response
   }
 });
 
-
 // API route to get the latest match data
-app.get("/latestMatch", cors() ,async (req, res) => {
+app.get("/latestMatch", cors(), async (req, res) => {
   const url = req.query.url;
 
   if (!url) {
@@ -411,7 +398,7 @@ app.get("/latestMatch", cors() ,async (req, res) => {
 
 // Register API
 app.post(
-  "/register", 
+  "/register",
   [
     body("username").isLength({ min: 3 }),
     body("email").isEmail(),
@@ -496,7 +483,7 @@ app.post("/login", async (req, res) => {
 });
 
 // Logout API to destroy the session
-app.post("/logout",  (req, res) => {
+app.post("/logout", (req, res) => {
   req.session.destroy((err) => {
     if (err) {
       return res.status(500).json({ message: "Failed to log out" });
