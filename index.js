@@ -36,7 +36,6 @@ app.use(
     origin: "https://footballower.vercel.app", 
     credentials: true, // Allow credentials (cookies, etc.)
     methods: ["GET", "POST","DELETE"], 
-    allowedHeaders: ["Content-Type", "Authorization"], // Specify allowed headers
   })
 );
 app.use(helmet());
