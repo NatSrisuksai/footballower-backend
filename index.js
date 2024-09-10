@@ -35,7 +35,6 @@ app.use(
   cors({
     origin: "https://footballower.vercel.app", 
     credentials: true, // Allow credentials (cookies, etc.)
-    methods: ["GET", "POST","DELETE"], 
   })
 );
 app.use(helmet());
@@ -352,7 +351,7 @@ async function scrapeData(url) {
 
 
 // Route to fetch Premier League table data
-app.get("/", async (req, res) => {
+app.get("/", cors(),async (req, res) => {
   try {
     const mergedData = await fetchAndMergeData();
     console.log(cookies);
@@ -363,7 +362,7 @@ app.get("/", async (req, res) => {
 });
 
 // Route to get favorite teams for a user
-app.get("/getFav", async (req, res) => {
+app.get("/getFav", cors(),async (req, res) => {
   try {
     const userID = cookies.id;
     const query = "SELECT f.team FROM userdata u JOIN favouritetable f ON u.id = f.user_id WHERE u.id = $1";
@@ -377,7 +376,7 @@ app.get("/getFav", async (req, res) => {
 });
 
 // API route to get the latest match data
-app.get("/latestMatch", async (req, res) => {
+app.get("/latestMatch", cors() ,async (req, res) => {
   const url = req.query.url;
 
   if (!url) {
