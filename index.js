@@ -392,7 +392,7 @@ app.get("/latestMatch", cors(), async (req, res) => {
 
 // Register API
 app.post(
-  "/register",  cors() ,
+  "/register", 
   [
     body("username").isLength({ min: 3 }),
     body("email").isEmail(),
@@ -445,7 +445,7 @@ app.post(
 );
 
 // Login API with session support
-app.post("/login",   cors() ,async (req, res) => {
+app.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
   try {
@@ -477,7 +477,7 @@ app.post("/login",   cors() ,async (req, res) => {
 });
 
 // Logout API to destroy the session
-app.post("/logout",  cors(), (req, res) => {
+app.post("/logout",  (req, res) => {
   req.session.destroy((err) => {
     if (err) {
       return res.status(500).json({ message: "Failed to log out" });
@@ -489,7 +489,7 @@ app.post("/logout",  cors(), (req, res) => {
   });
 });
 
-app.post("/addFavorite", cors(), async (req, res) => {
+app.post("/addFavorite", async (req, res) => {
   const userId = cookies.id;
   const teamName = req.body.teamName;
 
@@ -511,7 +511,7 @@ app.post("/addFavorite", cors(), async (req, res) => {
   }
 });
 
-app.delete("/deleteFavorite",  cors(),async (req, res) => {
+app.delete("/deleteFavorite", async (req, res) => {
   const userId = cookies.id;
   const teamName = req.body.teamName;
 
