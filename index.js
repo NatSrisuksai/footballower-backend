@@ -11,6 +11,8 @@ import fetchAndMergeData from "./public/fetchMergeData.js";
 import basicTeamInfo from "./public/basicTeamInfo.js";
 import scrapeData from "./public/scrapeData.js";
 
+
+
 dotenv.config();
 const app = express();
 const port = 3000;
