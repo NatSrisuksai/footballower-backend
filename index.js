@@ -36,10 +36,14 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(
   cors({
-    origin: "https://footballower-web-application.vercel.app/", // eact app's URL
-    credentials: true, // Allow cookies to be sent
+    origin: "https://footballower-web-application.vercel.app", 
+    credentials: true, // Allow sending cookies or authentication headers
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Allowed methods
+    allowedHeaders: ['Content-Type', 'Authorization'] // Allowed headers
   })
 );
+app.options('*', cors()); // Preflight requests for all routes
+
 app.use(helmet());
 
 const pool = new Pool({
