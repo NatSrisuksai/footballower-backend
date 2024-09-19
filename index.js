@@ -41,7 +41,7 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
   })
 );
-app.options('*', cors()); // Preflight requests for all routes
+
 
 app.use(helmet());
 
