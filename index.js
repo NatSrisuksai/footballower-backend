@@ -96,10 +96,15 @@ app.get("/latestMatch", async (req, res) => {
   }
 
   try {
+    console.log("Received URL:", url); // Log the received URL
     const matches = await scrapeData(url);
     res.json(matches);
   } catch (error) {
-    res.status(500).send("Error fetching match data");
+    console.error("Error in /latestMatch:", error); // Log the full error
+    res.status(500).json({
+      message: "Error fetching match data",
+      error: error.message
+    });
   }
 });
 
