@@ -36,7 +36,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(
   cors({
-    origin: "http://localhost:5173", // eact app's URL
+    origin: true, // eact app's URL
     credentials: true, // Allow cookies to be sent
   })
 );
