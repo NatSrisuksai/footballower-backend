@@ -62,7 +62,7 @@ const pool = new pg.Pool({
 pool.connect();
 
 // Example route for merging data
-app.get("/", async (req, res) => {
+app.get("/teamdata", async (req, res) => {
   try {
     const mergedData = await fetchAndMergeData();
     console.log(cookies);
