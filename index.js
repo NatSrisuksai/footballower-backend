@@ -36,7 +36,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(
   cors({
-    origin: true, // eact app's URL
+    origin: "https://footballower-web-application.vercel.app/", // eact app's URL
     credentials: true, // Allow cookies to be sent
   })
 );
