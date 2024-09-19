@@ -1,6 +1,5 @@
 import express from "express";
 import bodyParser from "body-parser";
-import axios from "axios";
 import cors from "cors";
 import pg from "pg";
 import bcrypt from "bcrypt";
@@ -8,9 +7,9 @@ import dotenv from "dotenv";
 import helmet from "helmet";
 import { body, validationResult } from "express-validator";
 import session from "express-session";
-import fetchAndMergeData from "./public/fetchMergeData.js"
-import basicTeamInfo from "./public/basicTeamInfo.js"
-import scrapeData from "./public/scrapeData.js"
+import fetchAndMergeData from "./public/fetchMergeData.js";
+import basicTeamInfo from "./public/basicTeamInfo.js";
+import scrapeData from "./public/scrapeData.js";
 
 dotenv.config();
 const app = express();
@@ -25,50 +24,36 @@ app.use(
     resave: true, // Prevents session from being saved again if unmodified
     saveUninitialized: true, // Saves uninitialized sessions 
     cookie: {
-      secure: true, // Set true if using HTTPS
+      secure: process.env.NODE_ENV === 'production', // Set true if using HTTPS in production
       maxAge: 1000 * 60 * 60, // 1 hour session duration
+      sameSite: "lax", // Cookie should be sent for same-origin or top-level navigation
     },
   })
 );
 
-
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-
 app.use(
   cors({
-    origin: "https://footballower-web-application.vercel.app", 
+    origin: "https://footballower-web-application.vercel.app", // Your frontend URL
     credentials: true, // Allow sending cookies or authentication headers
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Allowed methods
-    allowedHeaders: ['Content-Type', 'Authorization'] // Allowed headers
+    allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
   })
 );
 app.options('*', cors()); // Preflight requests for all routes
 
+app.use(helmet());
 
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'https://footballower-web-application.vercel.app');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  next();
+const pool = new pg.Pool({
+  connectionString: process.env.POSTGRES_URL,
 });
 
+// Ensure connection to the database
+pool.connect();
 
-
-app.use(helmet());
-const { Pool } = pg;
-const db = new Pool({
-  connectionString: process.env.POSTGRES_URL,
-})
-
-db.connect();
-
-const url = "https://www.premierleague.com/tables"; // URL of Premier League standings page
-
-
-
-app.get("/", cors(), async (req, res) => {
+// Example route for merging data
+app.get("/", async (req, res) => {
   try {
     const mergedData = await fetchAndMergeData();
     console.log(cookies);
@@ -78,12 +63,13 @@ app.get("/", cors(), async (req, res) => {
   }
 });
 
-app.get("/getFav", cors(), async (req, res) => {
+// Example route for fetching favorite teams
+app.get("/getFav", async (req, res) => {
   try {
-    const userID = cookies.id;
+    const userID = cookies?.id; // Get the user ID from cookies
     const query =
-      "SELECT f.team FROM userdata u JOIN favouritetable f ON u.id = f.user_id WHERE u.id =$1";
-    const result = await db.query(query, [userID]);
+      "SELECT f.team FROM userdata u JOIN favouritetable f ON u.id = f.user_id WHERE u.id = $1";
+    const result = await pool.query(query, [userID]);
     const favTeam = result.rows;
 
     res.json(favTeam);
@@ -93,7 +79,7 @@ app.get("/getFav", cors(), async (req, res) => {
 });
 
 // API route to get the latest match data
-app.get("/latestMatch", cors(), async (req, res) => {
+app.get("/latestMatch", async (req, res) => {
   const url = req.query.url;
 
   if (!url) {
@@ -125,14 +111,14 @@ app.post(
 
     try {
       const checkUsernameQuery = "SELECT * FROM userdata WHERE username = $1";
-      const usernameResult = await db.query(checkUsernameQuery, [username]);
+      const usernameResult = await pool.query(checkUsernameQuery, [username]);
 
       if (usernameResult.rows.length > 0) {
         return res.status(400).json({ message: "Username already exists." });
       }
 
       const checkEmailQuery = "SELECT * FROM userdata WHERE email = $1";
-      const emailResult = await db.query(checkEmailQuery, [email]);
+      const emailResult = await pool.query(checkEmailQuery, [email]);
 
       if (emailResult.rows.length > 0) {
         return res.status(400).json({ message: "Email already exists." });
@@ -143,11 +129,12 @@ app.post(
 
       const insertQuery =
         "INSERT INTO userdata (username, email, password) VALUES ($1, $2, $3)";
-      await db.query(insertQuery, [username, email, hashedPassword]);
+      await pool.query(insertQuery, [username, email, hashedPassword]);
 
       const queryForCookie = "SELECT * FROM userdata WHERE username = $1";
-      const resultForCooke = await db.query(queryForCookie, [username]);
-      const user = resultForCooke.rows[0];
+      const resultForCookie = await pool.query(queryForCookie, [username]);
+      const user = resultForCookie.rows[0];
+
       // Save user info in the session
       req.session.user = {
         id: user.id,
@@ -168,7 +155,7 @@ app.post("/login", async (req, res) => {
 
   try {
     const query = "SELECT * FROM userdata WHERE username = $1";
-    const result = await db.query(query, [username]);
+    const result = await pool.query(query, [username]);
 
     if (result.rows.length === 0) {
       return res.status(401).json({ message: "Username not found." });
@@ -203,12 +190,12 @@ app.post("/logout", (req, res) => {
     res.clearCookie("connect.sid"); // Clear session cookie
     res.status(200).json({ message: "Logged out successfully" });
     cookies = null;
-    console.log("Destroy Cookies");
   });
 });
 
+// Add favorite team
 app.post("/addFavorite", async (req, res) => {
-  const userId = cookies.id;
+  const userId = cookies?.id;
   const teamName = req.body.teamName;
 
   if (!userId || !teamName) {
@@ -219,18 +206,17 @@ app.post("/addFavorite", async (req, res) => {
 
   try {
     const query = "INSERT INTO favouritetable (user_id, team) VALUES ($1, $2)";
-    await db.query(query, [userId, teamName]);
+    await pool.query(query, [userId, teamName]);
     res.status(201).json({ message: "Favorite team added successfully!" });
   } catch (error) {
     console.error("Error adding favorite team:", error);
-    res
-      .status(500)
-      .json({ message: "An error occurred while adding the favorite team." });
+    res.status(500).json({ message: "An error occurred while adding the favorite team." });
   }
 });
 
+// Delete favorite team
 app.delete("/deleteFavorite", async (req, res) => {
-  const userId = cookies.id;
+  const userId = cookies?.id;
   const teamName = req.body.teamName;
 
   if (!userId || !teamName) {
@@ -241,7 +227,7 @@ app.delete("/deleteFavorite", async (req, res) => {
 
   try {
     const query = "DELETE FROM favouritetable WHERE user_id = $1 AND team = $2";
-    const result = await db.query(query, [userId, teamName]);
+    const result = await pool.query(query, [userId, teamName]);
 
     if (result.rowCount === 0) {
       return res.status(404).json({ message: "Favorite team not found." });
@@ -250,9 +236,7 @@ app.delete("/deleteFavorite", async (req, res) => {
     res.status(200).json({ message: "Favorite team removed successfully!" });
   } catch (error) {
     console.error("Error deleting favorite team:", error);
-    res
-      .status(500)
-      .json({ message: "An error occurred while deleting the favorite team." });
+    res.status(500).json({ message: "An error occurred while deleting the favorite team." });
   }
 });
 
