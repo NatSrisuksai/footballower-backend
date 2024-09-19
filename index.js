@@ -12,8 +12,6 @@ import fetchAndMergeData from "./public/fetchMergeData.js"
 import basicTeamInfo from "./public/basicTeamInfo.js"
 import scrapeData from "./public/scrapeData.js"
 
-
-
 dotenv.config();
 const app = express();
 const port = 3000;
@@ -24,7 +22,7 @@ var cookies;
 app.use(
   session({
     secret: process.env.COOKIE_SECRET_KEY, 
-    resave: false, // Prevents session from being saved again if unmodified
+    resave: true, // Prevents session from being saved again if unmodified
     saveUninitialized: true, // Saves uninitialized sessions 
     cookie: {
       secure: true, // Set true if using HTTPS
@@ -32,6 +30,7 @@ app.use(
     },
   })
 );
+
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
