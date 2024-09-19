@@ -58,7 +58,7 @@ app.use((req, res, next) => {
 
 app.use(helmet());
 const { Pool } = pg;
-const pool = new Pool({
+const db = new Pool({
   connectionString: process.env.POSTGRES_URL,
 })
 
