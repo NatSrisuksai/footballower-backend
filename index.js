@@ -47,10 +47,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.options('*', cors({
-  origin: "https://footballower-web-application.vercel.app", // Frontend URL
-  credentials: true, // Required when sending credentials like cookies
-}));
+
 
 
 app.use(helmet());
