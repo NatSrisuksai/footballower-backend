@@ -34,6 +34,7 @@ app.use(
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+
 app.use(
   cors({
     origin: "https://footballower-web-application.vercel.app", 
@@ -43,6 +44,17 @@ app.use(
   })
 );
 app.options('*', cors()); // Preflight requests for all routes
+
+
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'https://footballower-web-application.vercel.app');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  next();
+});
+
+
 
 app.use(helmet());
 
