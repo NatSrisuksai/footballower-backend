@@ -24,7 +24,7 @@ app.use(
     resave: true, // Prevents session from being saved again if unmodified
     saveUninitialized: true, // Saves uninitialized sessions 
     cookie: {
-      secure: process.env.NODE_ENV === 'production', // Set true if using HTTPS in production
+      secure: true, // Set true if using HTTPS in production
       maxAge: 1000 * 60 * 60, // 1 hour session duration
       sameSite: "lax", // Cookie should be sent for same-origin or top-level navigation
     },
@@ -41,6 +41,12 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
   })
 );
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "https://footballower-web-application.vercel.app");
+  res.header("Access-Control-Allow-Credentials", "true");
+  next();
+});
+
 
 
 app.use(helmet());
