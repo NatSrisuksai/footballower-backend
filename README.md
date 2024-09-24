@@ -15,7 +15,7 @@ This is back end for Footballower Web Application [Footballower](https://github.
 
 ## Prerequisites
 
-- Node.JS
+- Node.JS : Ensure Node.js is installed on your machine to run the project.
 - PostgreSQL
 ## Installation
 
