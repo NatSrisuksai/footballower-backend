@@ -8,7 +8,6 @@ import helmet from "helmet";
 import { body, validationResult } from "express-validator";
 import session from "express-session";
 import fetchAndMergeData from "./public/fetchMergeData.js";
-import basicTeamInfo from "./public/basicTeamInfo.js";
 import scrapeData from "./public/scrapeData.js";
 
 
@@ -37,7 +36,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(
   cors({
-    origin: "https://footballower-web-application.vercel.app", // Your frontend URL
+    origin: "https://footballower-web-application.vercel.app", 
     credentials: true, // Allow sending cookies or authentication headers
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Allowed methods
     allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
